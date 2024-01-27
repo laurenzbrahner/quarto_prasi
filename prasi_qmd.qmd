@@ -1,0 +1,1311 @@
+---
+title: "Musiktrends"
+subtitle: 'Was einen Song erfolgreich macht'
+author: 'Laurenz Brahner'
+execute:
+    eval: true
+    echo: false 
+lang: "de"
+highlight-style: github
+format:
+    revealjs:
+        toc: true
+        toc-depth: 1
+        embed-resources: true
+        code-copy: true
+        code-line-numbers: true
+        scrollable: false
+        slide-number: c
+        incremental: true
+        transition: slide
+        theme: [dark, custom_design.scss]  
+        width: 2000   
+        height: 960
+
+---
+
+
+# Überblick über die Daten
+
+## Datenquelle: <span style="color: #00d9ff">**Kaggle**</span>
+
+::: {.fragment .fade-in}
+### Datensatz: <span style="color: #00d9ff">***Meistgestreamte Songs auf Spotify im Jahr 2023***</span>
+::: 
+<br/>
+
+::: {.fragment .fade-in}
+Dieser Datensatz bietet detaillierte Informationen zu den Top-Streaming-Songs auf Spotify im Jahr 2023: 
+:::
+- <span style="color: #ffc71f">**Track-Informationen**</span>: Titel, Künstler, Veröffentlichungsdatum
+- <span style="color: #ffc71f">**Anzahl der Playlists und Charts**</span>: Anzahl der Playlists und Charts, in denen der Track erscheint
+- <span style="color: #ffc71f">**Gesamtzahl der Streams**</span>: Gesamtanzahl der Streams pro Track
+- <span style="color: #ffc71f">**Musikalische Merkmale**</span>: Tanzbarkeit, Energie, Tonart, usw.
+- (<span style="color: #ffc71f">**Herkunft der Künstler**</span>: Länder, aus denen die Künstler stammen)
+
+::: footer
+Überblick über die Daten
+:::
+
+
+
+# Einführung 
+
+
+##  <span class="top" style="text-align: center"> Top-Songs 2023</span>
+<br/>
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+
+
+
+
+
+1. <span style="color: #fde725">Blinding Lights (3.7 Mrd)</span>
+2. <span style="color: #abdc32">Shape of You (3.6 Mrd.) </span>
+3. <span style="color: #375b8c"> Someone You Loved (2.9 Mrd.)</span>
+
+
+:::
+
+::: {.column width="70%"}
+
+
+```{python}
+#
+
+
+import altair as alt
+import pandas as pd
+
+
+df = pd.read_csv('spotify_angereichert_cleaned.csv')
+
+
+df.drop(['Unnamed: 0'], axis=1, inplace=True)
+
+
+# Griupieren nach Künstler und Summieren der Streams
+
+
+df_top10_songs = df.sort_values(by='streams', ascending=False).head(10)
+
+# only show track name and streams
+
+df_top10_songs = df_top10_songs[['track_name', 'streams', 'artist(s)_name']]
+
+
+# sort after the most streamed artists
+
+df_top_artist = df.groupby('artist(s)_name')[
+    'streams'].sum().sort_values(ascending=False)
+
+# Anzeigen der Top-Künstler basierend auf Streams
+top_artists_streams = df_top_artist.head(10)
+
+top_artists_streams_3 = df_top_artist.head(3)
+
+
+df_top10_songs['is_top_3'] = df_top10_songs['streams'].rank(
+    ascending=False) <= 3
+
+
+title_color = "rgba(230, 230, 230, 0.7)"
+axis_title_y = "rgba(230, 230, 230, 0.5)"  # Weiß mit 90% Deckkraft
+axis_title_color = "rgba(224, 224, 224, 0.3)"  # Helles Grau mit 80% Deckkraft
+
+top_artists_streams_chart = alt.Chart(df_top10_songs).mark_bar(size=45).encode(
+    y=alt.Y('track_name:N', sort='-x',
+            axis=alt.Axis(title='Songtitel', labelFontSize=18, labelColor=axis_title_y, titleColor=axis_title_color, titleFontSize=35)),
+    x=alt.X('streams:Q', axis=alt.Axis(title='Streams (Milliarden)', titleFontSize=35,
+            labelFontSize=22, format='.0s', tickCount=5, tickMinStep=1e9, labelExpr='datum.value / 1e9', labelColor=axis_title_color, titleColor=axis_title_color)),
+    color=alt.Color('streams:Q', scale=alt.Scale(
+        scheme='viridis'), legend=None),
+    tooltip=[
+        alt.Tooltip('track_name:N', title='Songtitel'),
+        alt.Tooltip('streams:Q', title='Anzahl der Streams'),
+        alt.Tooltip('artist(s)_name:N', title='Künstlername')
+    ]
+).properties(
+    title={'text': 'Top 10 Songs nach Streams 2023', 'color': title_color},
+    width=1000,
+    height=600,
+    background='#191919'
+).configure_title(
+    fontSize=45,
+    anchor='start'
+).configure_axis(
+    grid=False,
+    titlePadding=20
+).configure_view(
+    strokeWidth=0,
+    continuousWidth=1000,
+    continuousHeight=600
+).configure_axisX(
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='middle',
+    titleFontSize=20
+)
+
+
+top_artists_streams_chart
+
+
+
+```
+
+:::
+
+::::
+
+
+::: footer
+
+Einführung 
+
+:::
+
+
+
+## Top-Künstler 2023
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+
+
+
+
+
+1. <span style="color: #fde725">Ed Sheeran (14 Mrd)</span>
+2. <span style="color: #6ccd59">Taylor Swift (12 Mrd.) </span>
+3. <span style="color: #20a486">The Weeknd (10 Mrd.)</span>
+
+
+::: {.fragment .fade-in}
+<br/>
+<br/>
+
+<div style="font-size: 50px"> ***Was hat diese Songs und diese Künstler so erfolgreich gemacht?***
+Gibt es eine <span style="color: #ff3c00">**Geheimformel?**</span>
+ </div> 
+
+:::
+
+
+:::
+
+::: {.column width="70%"}
+
+```{python}
+
+artist_streams = df.groupby('artist(s)_name')[
+    'streams'].sum().sort_values(ascending=False)
+
+# Anzeigen der Top-Künstler basierend auf Streams
+top_artists_streams = artist_streams.head(10)
+
+
+top_artists_streams_chart = alt.Chart(top_artists_streams.reset_index()).mark_bar().encode(
+    x=alt.X('artist(s)_name', sort='-y',
+            axis=alt.Axis(title='Künstler', labelFontSize=20)),
+    y=alt.Y('streams',   axis=alt.Axis(title='Streams (Milliarden)', titleFontSize=35,
+            labelFontSize=22, format='.0s', tickCount=5, tickMinStep=1e9, labelExpr='datum.value / 1e9')),
+    color=alt.Color('streams', scale=alt.Scale(scheme='viridis'), legend=None),
+    tooltip=['artist(s)_name', 'streams']
+).properties(
+    title={'text': 'Top 10 Künstler nach Streams',
+           'dy': -20, 'color': title_color},
+    background='#191919',
+    width=1000,
+    height=600
+).configure_title(
+    fontSize=45,
+    anchor='start'
+).configure_axis(
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_color,
+    titlePadding=12,
+    grid=False
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=-45,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+top_artists_streams_chart
+
+
+```
+
+:::
+::::
+
+::: footer
+
+Einführung 
+
+:::
+
+# Einfluss der Tonart und des Keys
+
+## Major vs Minor
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+
+
+<br/>
+<br/>
+
+
+
+- <span style="color: #4ee2e6; font-size: 60px;">Major:</span> <br/>
+    helle und fröhliche Klangqualität
+
+
+- <span style="color: #a5ff9e; font-size: 60px;">Minor:</span><br/>
+    melancholische und düstere Stimmung
+
+
+:::
+
+::: {.column width="70%"}
+
+```{python}
+
+mode_streams = df.groupby('mode')['streams'].mean()
+
+
+mode_streams_df = mode_streams.reset_index()
+
+mode_song_count = df.groupby('mode').size().reset_index(name='song_count')
+
+
+chart_mode_bar = alt.Chart(mode_song_count).mark_bar(clip=True, size=80).encode(
+    x=alt.X('mode', axis=alt.Axis(title='Tonart',
+            labelFontSize=20,  titleFontSize=35)),
+    y=alt.Y('song_count', scale=alt.Scale(domain=[250, 450]), axis=alt.Axis(title='Anzahl der Songs', titleFontSize=35,
+                                                                            labelFontSize=20, tickCount=4, tickMinStep=50)),
+    color=alt.Color('mode', legend=None, scale=alt.Scale(
+        range=['#4ee2e6', '#a5ff9e'])),
+
+    tooltip=[
+        alt.Tooltip('mode', title='Tonart'),
+        alt.Tooltip('song_count', title='Anzahl der Songs')
+    ]
+).properties(
+    title={'text': 'Anzahl der Top-Songs nach Tonart',  'dy': -20},
+    width=1000,
+    height=600,
+    background='#191919',
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=14,
+    titleFontSize=20,
+    titleColor=axis_title_color,
+    labelColor='gray',
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=16,
+    labelFontSize=14
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end',
+    titleFontSize=20
+)
+
+chart_mode_bar
+```
+:::
+::::
+
+::: footer
+Einfluss der Tonart und des Keys
+:::
+
+## Major vs Minor
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+<br/>
+
+
+
+- <span style="color: #4ee2e6">Deutlich mehr Top-Songs haben die Tonart Major und sind damit eher fröhlich </span> <br/>
+
+
+     
+
+:::
+::: {.column width="70%"}
+
+
+```{python}
+
+import altair as alt
+
+# ...
+
+# Finde den größten Wert in der 'streams'-Spalte
+max_streams = mode_song_count['song_count'].max()
+
+
+# Erstelle das Balkendiagramm
+chart_mode_bar = alt.Chart(mode_song_count).mark_bar(clip=True, size=80).encode(
+    x=alt.X('mode', axis=alt.Axis(title='Tonart',
+            labelFontSize=20,  titleFontSize=35)),
+    y=alt.Y('song_count', scale=alt.Scale(domain=[250, 450]), axis=alt.Axis(title='Anzahl der Songs', titleFontSize=35,
+                                                                            labelFontSize=20, tickCount=5, tickMinStep=50)),
+    color=alt.Color('mode', legend=None, scale=alt.Scale(
+        range=['#4ee2e6', '#a5ff9e'])),
+
+    tooltip=[
+        alt.Tooltip('mode', title='Tonart'),
+        alt.Tooltip('song_count', title='Ø Streams')
+    ]
+)
+
+# Erstelle eine Linie über dem größten Balken
+highlighted_line = alt.Chart(pd.DataFrame({'max_streams': [max_streams]})).mark_rule(color='red', strokeWidth=4).encode(
+    y='max_streams:Q'
+)
+
+final_chart = alt.layer(chart_mode_bar,  highlighted_line).properties(
+    title={'text': 'Anzahl der Top-Songs nach Tonart',  'dy': -20},
+    width=1000,
+    height=600,
+    background='#191919',
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=14,
+    titleFontSize=20,
+    titleColor=axis_title_color,
+    labelColor='gray',
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=16,
+    labelFontSize=14
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end',
+    titleFontSize=20
+)
+
+final_chart
+
+
+
+```
+
+::: footer
+Einfluss der Tonart und des Keys
+:::
+
+:::
+::::
+
+## Der Einfluss des Keys 
+
+
+:::: {.columns}
+
+::: {.column width="30%"}
+<br/>
+
+::: {.fragment .fade-in}
+***"Keys"*** sind die musikalischen Bausteine, die bestimmen, wie die Musik klingt und sich anhört.
+:::
+     
+
+:::
+::: {.column width="70%"}
+
+
+
+```{python}
+
+key_streams = df.groupby('key')['streams'].mean()
+
+
+key_streams_df = key_streams.reset_index()
+
+
+
+
+
+key_streams_chart = alt.Chart(key_streams_df).mark_bar(clip=True).encode(
+    x=alt.X('key',  axis=alt.Axis(title='Key')),
+    y=alt.Y('streams', scale=alt.Scale(domain=[400000000, 650000000]), axis=alt.Axis(title='Ø Streams (Millionen)',
+                                                                                     format='.0s', tickCount=5, tickMinStep=1e9, labelExpr='datum.value / 1e6')),
+    color=alt.Color('key', legend=None,),
+    tooltip=['key', 'streams']
+).properties(
+    title={'text': 'Durchschnittliche Streams nach Key', 'dy': -20},
+    background='#191919',
+    width=1000,
+    height=600
+).configure_title(
+    fontSize=45,
+    color=title_color,
+    anchor='start'
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=32,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=16,
+    labelFontSize=14
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+key_streams_chart
+
+```
+
+:::
+::::
+
+::: footer
+Einfluss der Tonart und des Keys
+:::
+
+## Der Einfluss des Keys
+
+
+:::: {.columns}
+
+::: {.column width="30%"}
+<br/>
+
+
+- Songs mit dem Key <span style="color: red">***C#***</span> haben im Durchschnitt die **meisten** Streams 
+- Songs mit dem Key ***A*** haben im Durchschnitt die **wenigsten** Streams 
+
+
+     
+
+:::
+::: {.column width="70%"}
+
+```{python}
+
+
+max_streams_key = key_streams_df['streams'].max()
+
+min_streams_key = key_streams_df['streams'].min()
+
+
+# Erstelle das Balkendiagramm
+chart_mode_bar = alt.Chart(key_streams_df).mark_bar(clip=True, size=80, opacity=0.3).encode(
+    x=alt.X('key', axis=alt.Axis(title='Tonart')),
+    y=alt.Y('streams', scale=alt.Scale(domain=[400000000, 650000000]), axis=alt.Axis(title='Ø Streams (Millionen)',
+                                                                                     format='.0s', tickCount=5, tickMinStep=1e9, labelExpr='datum.value / 1e6')),
+    color=alt.Color('key', legend=None),
+
+    tooltip=[
+        alt.Tooltip('key', title='Tonart'),
+        alt.Tooltip('streams', title='Ø Streams')
+    ]
+)
+
+# Erstelle eine Linie über dem größten Balken
+highlighted_line_max = alt.Chart(pd.DataFrame({'max_streams': [max_streams_key]})).mark_rule(color='red', strokeWidth=4).encode(
+    y='max_streams:Q'
+)
+
+highlighted_line_min = alt.Chart(pd.DataFrame({'min_streams': [min_streams_key]})).mark_rule(color='white', strokeDash=[12, 11], strokeWidth=2, opacity=0.5).encode(
+    y='min_streams:Q'
+)
+
+
+final_chart = alt.layer(chart_mode_bar,  highlighted_line_max, highlighted_line_min).properties(
+    title={'text': 'Durchschnittliche Streams nach Key',  'dy': -20},
+    width=1000,
+    height=600,
+    background='#191919',
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=20,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor='gray',
+    titlePadding=12,
+    grid=False
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+final_chart
+
+
+```
+
+:::
+::::
+
+::: footer
+Einfluss der Tonart und des Keys
+:::
+
+# Der beste Zeitpunkt für einen Song-Release
+
+## Releasezeitpunkt der Top-Songs
+
+:::: {.columns}
+
+::: {.column width="10%"}
+
+
+
+     
+
+:::
+::: {.column width="90%"}
+
+```{python}
+
+monthly_releases = df.groupby(
+    'released_month').size().reset_index(name='count')
+
+month_labels = {
+    1: 'Jan',
+    2: 'Feb',
+    3: 'Mar',
+    4: 'Apr',
+    5: 'May',
+    6: 'Jun',
+    7: 'Jul',
+    8: 'Aug',
+    9: 'Sep',
+    10: 'Oct',
+    11: 'Nov',
+    12: 'Dec'
+}
+
+monthly_releases['released_month'] = monthly_releases['released_month'].map(
+    month_labels)
+
+
+def base_chart(df):
+    chart = monthly_releases_chart = alt.Chart(df).mark_line(strokeWidth=3).encode(
+        x=alt.X('released_month', axis=alt.Axis(title='Monat'),
+                sort=list(month_labels.values())),
+        y=alt.Y('count', scale=alt.Scale(domain=(30, 120)), axis=alt.Axis(
+            title='Veröffentlichungen')),
+        tooltip=['released_month', 'count']
+    )
+    return chart
+
+
+max_points = monthly_releases[monthly_releases['count']
+                              == monthly_releases['count'].max()]
+min_points = monthly_releases[monthly_releases['count']
+                              == monthly_releases['count'].min()]
+
+min_points_chart = base_chart(min_points).mark_point(size=200, color='white')
+max_points_chart = base_chart(max_points).mark_point(size=200, color='red')
+min_points_chart_line = alt.Chart().mark_rule(strokeDash=[12, 6], size=4, color='white', fontSize=12, opacity=0.6).encode(
+    y=alt.datum(39),
+    x=alt.datum("Aug")
+)
+max_points_chart_line_jan = alt.Chart().mark_rule(strokeDash=[12, 6], size=4, color='red', fontSize=12, opacity=0.6).encode(
+    y=alt.datum(112),
+    x=alt.datum("Jan")
+)
+max_points_chart_line_may = alt.Chart().mark_rule(strokeDash=[12, 6], size=4, color='red', fontSize=12, opacity=0.6).encode(
+    y=alt.datum(112),
+    x=alt.datum("May")
+)
+
+detailed_chart_release = alt.layer(min_points_chart_line+max_points_chart_line_jan + max_points_chart_line_may + min_points_chart + max_points_chart + base_chart(monthly_releases)).properties(
+    title={'text': 'Anzahl der Songveröffentlichungen pro Monat', 'dy': -20},
+    background='#191919',
+    width=1000,
+    height=600
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=20,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+
+base_chart_release = alt.layer(base_chart(monthly_releases)).properties(
+    # title={'text': 'Anzahl der Songveröffentlichungen nach Monat', 'dy': -20},
+    background='#191919',
+    width=1500,
+    height=600
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=20,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+base_chart_release
+
+
+```
+
+:::
+::::
+
+::: footer 
+Der beste Zeitpunkt für einen Song-Release
+:::
+
+## Der beste Zeitpunkt für einen Song-Release
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+<br/>
+
+- Die <u>**meisten**</u> Top-Songs werden im <span style="color: red">***Januar***</span> und im <span style="color: red">***Mai***</span> veröffentlicht.
+
+<br/>
+<br/>
+
+- die <u>**wenigsten**</u> Top-Songs werden im ***August*** veröffentlicht.
+     
+
+:::
+::: {.column width="70%"}
+
+```{python}
+
+detailed_chart_release
+
+```
+
+::: 
+::::
+
+::: footer 
+Der beste Zeitpunkt für einen Song-Release
+:::
+
+# Die wichtigsten musikalischen Merkmale
+
+## Sprechanteil
+
+<br/>
+
+:::: {.columns}
+
+::: {.column width="20%"}
+
+
+- Verhältnis zwischen der Anzahl der gesprochenen Wörter und der Instrumentalmusik.
+
+- Bspw. Rap hat einen **hohen** Sprechanteil
+
+
+     
+
+:::
+::: {.column width="80%"}
+
+```{python}
+
+import numpy as np
+from sklearn.linear_model import LinearRegression
+
+song_count_df = df.groupby(
+    'speechiness_%').size().reset_index(name='song_count')
+# Filtern des DataFrames auf speechiness-Werte von 40 oder weniger
+filtered_song_count_df = song_count_df[song_count_df['speechiness_%'] <= 40]
+
+# Verwenden des gefilterten DataFrames für die Regression
+X_filtered = filtered_song_count_df['speechiness_%'].values.reshape(-1, 1)
+y_filtered = filtered_song_count_df['song_count'].values
+reg_filtered = LinearRegression().fit(X_filtered, y_filtered)
+
+# Erstellen einer DataFrame für die Regressionslinie mit dem gefilterten Bereich
+regression_df_filtered = pd.DataFrame({'speechiness_%': np.linspace(
+    filtered_song_count_df['speechiness_%'].min(), filtered_song_count_df['speechiness_%'].max(), 100)})
+regression_df_filtered['song_count_predicted'] = np.clip(
+    reg_filtered.predict(regression_df_filtered[['speechiness_%']]), 0, None)
+
+# Erstellen der Regressionslinie mit dem gefilterten DataFrame
+regression_line_filtered = alt.Chart(regression_df_filtered).mark_line(color='red', size=2).encode(
+    x=alt.X('speechiness_%'),
+    y=alt.Y('song_count_predicted')
+)
+
+# Anpassen des Scatterplots, um die Anzahl der Songs anzuzeigen, nur für gefilterte Werte
+scatter_plot_filtered = alt.Chart(filtered_song_count_df).mark_circle(opacity=1).encode(
+    x=alt.X('speechiness_%', axis=alt.Axis(
+        title='Speechiness %', tickCount=10, tickMinStep=5)),
+    y=alt.Y('song_count', axis=alt.Axis(
+        title='Anzahl der Songs', tickCount=10, tickMinStep=20)),
+    size=alt.Size('song_count', scale=alt.Scale(
+        range=[20, 2000]), legend=alt.Legend(title='Anzahl')),
+    color=alt.Color('song_count', scale=alt.Scale(
+        scheme='viridis')),
+    tooltip=['speechiness_%', 'song_count']
+)
+
+
+scatter_plot_filtered_with_reg_line = alt.Chart(filtered_song_count_df).mark_circle(opacity=0.3).encode(
+    x=alt.X('speechiness_%', axis=alt.Axis(
+        title='Speechiness %', tickCount=10, tickMinStep=5)),
+    y=alt.Y('song_count', axis=alt.Axis(
+        title='Anzahl der Songs', tickCount=10, tickMinStep=20)),
+    size=alt.Size('song_count', scale=alt.Scale(
+        range=[20, 2000]), legend=None),
+    color=alt.Color('song_count', scale=alt.Scale(
+        scheme='viridis')),
+    tooltip=['speechiness_%', 'song_count']
+)
+
+# Kombinieren der Scatterplot- und Regressionslinie mit dem gefilterten DataFrame
+combined_chart_filtered = alt.layer(scatter_plot_filtered_with_reg_line + regression_line_filtered).properties(
+    title={'text': 'Beziehung zwischen Speechiness und Streams', 'dy': -20},
+    background='#191919',
+    width=1000,
+    height=600
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+
+base_chart_filtered = alt.layer(scatter_plot_filtered).properties(
+    # title={'text': 'Beziehung zwischen Speechiness und Streams', 'dy': -20},
+    background='#191919',
+    width=1200,
+    height=600
+).configure_title(
+    fontSize=45,
+    anchor='start',
+    color=title_color
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=30,
+    labelFontSize=22,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+base_chart_filtered
+
+
+```
+
+:::
+::::
+
+::: footer
+Die wichtigsten musikalischen Merkmale
+:::
+
+## Sprechanteil der Top-Songs
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+
+<br/>
+
+- Die meisten Top-Songs haben einen sehr <u>geringen</u> Sprechanteil
+
+
+     
+
+:::
+::: {.column width="70%"}
+```{python}
+
+
+combined_chart_filtered
+
+
+
+```
+
+:::
+::::
+
+::: footer
+Die wichtigsten musikalischen Merkmale
+:::
+
+
+## Energy
+:::: {.columns}
+
+::: {.column width="20%"}
+
+<br/>
+
+
+- Die <u>"Energy"</U> eines Songs ist ein Maß für seine Intensität und Dynamik,
+ basierend auf Faktoren wie Tempo, Lautstärke und Rhythmus
+
+
+:::
+::: {.column width="80%"}
+```{python}
+
+energy_grouped = df.groupby(pd.cut(df['energy_%'], range(
+    0, 101, 10))).size().reset_index(name='average_song_count')
+
+# Umbenennung der Spalte für die Energiebereiche
+energy_grouped.columns = ['energy_range', 'average_song_count']
+
+energy_grouped['energy_range'] = energy_grouped['energy_range'].apply(
+    lambda x: f"{x.left}-{x.right}")
+
+energy_grouped_chart = alt.Chart(energy_grouped).mark_bar().encode(
+    x=alt.X('energy_range', axis=alt.Axis(
+        title='Energy (%)')),
+    y=alt.Y('average_song_count', axis=alt.Axis(tickCount=10, tickMinStep=20,
+                                                title='Anzahl der Songs')),
+    color=alt.Color('energy_range',  scale=alt.Scale(
+        scheme='viridis'), legend=alt.Legend(title="Energy (%)")),
+    tooltip=['energy_range', 'average_song_count']
+).properties(
+    title={'text': 'Durchschnittliche Anzahl der Songs nach Energy', 'dy': -20},
+    background='#191919',
+    width=1200,
+    height=600
+).configure_title(
+    fontSize=45,
+    color=title_color,
+    anchor='start'
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=30,
+    labelFontSize=22,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+energy_grouped_chart
+
+
+
+```
+
+:::
+::::
+
+::: footer
+Die wichtigsten musikalischen Merkmale
+:::
+
+## Energy
+:::: {.columns}
+
+::: {.column width="30%"}
+
+<br/>
+
+
+- Die Anzahl der Top Songs nimmt erst zu, sinkt dann aber  mit steigendem Energy-Wert wieder
+
+<br/>
+<br/>
+
+
+::: {.fragment .fade-in}
+→ Die Meisten Top-Songs haben ein Energy-Wert von 60-70 %
+:::
+
+:::
+::: {.column width="70%"}
+```{python}
+
+
+energy_grouped_line_chart = alt.Chart(energy_grouped).mark_line(interpolate='monotone', size=4).encode(
+    x=alt.X('energy_range', axis=alt.Axis(
+        title='Energy (%)')),
+    y=alt.Y('average_song_count', axis=alt.Axis(
+        title='Anzahl der Songs')),
+    color=alt.value('red'),
+    tooltip=['energy_range', 'average_song_count']
+)
+
+energy_grouped_chart = alt.Chart(energy_grouped).mark_bar(opacity=0.4).encode(
+    x=alt.X('energy_range', axis=alt.Axis(
+        title='Energy (%)')),
+    y=alt.Y('average_song_count', axis=alt.Axis(tickCount=10, tickMinStep=20,
+                                                title='Anzahl der Songs')),
+    color=alt.Color('energy_range',  scale=alt.Scale(
+        scheme='viridis'), legend=alt.Legend(title="Energy (%)")),
+    tooltip=['energy_range', 'average_song_count']
+)
+
+with_line = alt.layer(energy_grouped_chart, energy_grouped_line_chart).properties(
+    title={'text': 'Durchschnittliche Anzahl der Songs nach Energy', 'dy': -20},
+    background='#191919',
+    width=1000,
+    height=600
+).configure_title(
+    fontSize=45,
+    color=title_color,
+    anchor='start'
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=30,
+    labelFontSize=22,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=0,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+with_line
+
+
+```
+
+:::
+::::
+
+::: footer
+Die wichtigsten musikalischen Merkmale
+:::
+
+# Einblick in die Herkunft der erfolgreichsten Künstler
+
+## 
+
+
+```{python}
+import geopandas as gpd
+import json
+
+country_mapping = {
+    'England': 'United Kingdom',
+    'Scotland': 'United Kingdom',
+    'Buenos Aires': 'Argentina',
+    'Guadalajara': 'Mexico',
+    'Nashville': 'United States of America',
+    'Downingtown': 'United States of America',
+    'McAllen': 'United States of America',
+    'Cabreúva': 'Brazil',
+    'Monroe': 'United States of America',
+    'Torrance': 'United States of America',
+    'Los Angeles': 'United States of America',
+    'Helsinki': 'Finland',
+    'Manchester': 'United Kingdom',
+    'Berlin': 'Germany',
+    'Ipswich': 'United Kingdom',
+    'Goiás': 'Brazil',
+    'Mato Grosso do Sul': 'Brazil',
+    'Las Palmas de Gran Canaria': 'Spain',
+    'Providence': 'United States of America',
+    'Orlando': 'United States of America',
+    'New York': 'United States of America',
+    'Austin': 'United States of America',
+    'Türkiye': 'Turkey',
+    'Punjab': 'India',
+    'Boston': 'United States of America',
+    'Amazonas': 'Brazil',
+    'Rio de Janeiro': 'Brazil',
+    'Sundsvall': 'Sweden',
+    'Gujarat': 'India',
+    'Philadelphia': 'United States of America',
+    'United States': 'United States of America',
+    'Oshawa': 'Canada'
+}
+
+# Aktualisieren Sie Ihren DataFrame
+df['artist_country'] = df['artist_country'].replace(country_mapping)
+
+# Zusätzliche Ersetzung für "United States"
+df['artist_country'] = df['artist_country'].replace(
+    {'United States': 'United States of America'})
+
+
+# Erstellen des DataFrames 'artist_count_by_country' wie in Ihrem Code
+artist_count_by_country = df['artist_country'].value_counts().reset_index()
+artist_count_by_country.columns = ['name', 'artist_count']
+
+# Laden der Weltkarte
+world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+
+# Zusammenführen der Daten
+world = world.merge(artist_count_by_country, on='name', how='left')
+world['artist_count'].fillna(0, inplace=True)
+
+# Konvertieren des GeoPandas-DataFrames in GeoJSON
+json_data = json.loads(world.to_json())
+
+# Basis-Karte mit angepassten Eigenschaften
+base = alt.Chart(alt.Data(values=json_data['features'])).mark_geoshape(
+    stroke='black',
+    strokeWidth=0.7
+).encode(
+    color=alt.condition(
+        'datum.properties.artist_count > 0',
+        alt.Color('properties.artist_count:Q', scale=alt.Scale(domain=[
+                  1, 368], type='log', scheme='blues'), legend=None),
+        alt.value('white')  # Farbe für Länder ohne Daten
+    ),
+    tooltip=[
+        alt.Tooltip('properties.name:N', title='Land'),
+        alt.Tooltip('properties.artist_count:Q', title='Anzahl der Künstler')
+    ]
+).project('equirectangular').properties(
+    width=1700,
+    height=800,
+    title={
+        "text": ['Weltkarte der Anzahl der Künstler nach Ländern'],
+        "subtitle": ['Herkunft der erfolgreichsten Künstler']
+    },
+    background='#191919'
+)
+
+# Anpassen der Ansicht
+final_chart = base.configure_view(
+    strokeOpacity=0
+).configure_title(
+    fontSize=45,
+    color=title_color,
+    anchor='start',
+    subtitleFontSize=35,
+    subtitleColor="lightgray"
+).configure_legend(
+    titleFontSize=30,
+    labelFontSize=22,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y
+)
+
+final_chart
+
+
+```
+
+
+
+::: footer
+Einblick in die Herkunft der erfolgreichsten Künstler
+:::
+## Top Herkunftsländer
+
+:::: {.columns}
+
+::: {.column width="30%"}
+
+<br/>
+
+
+1. USA
+2. UK
+3. Puerto Rico
+4. South Korea
+5. Kanada
+
+:::
+::: {.column width="70%"}
+
+```{python}
+
+artist_country_count = df.groupby('artist_country')[
+    'artist(s)_name'].count().sort_values(ascending=False)
+
+top_artist_country_count = artist_country_count.head(10)
+
+top_artist_country_count_chart = alt.Chart(top_artist_country_count.reset_index()).mark_bar().encode(
+    x=alt.X('artist_country', sort='-y', axis=alt.Axis(title='Land')),
+    y=alt.Y('artist(s)_name', axis=alt.Axis(
+        title='Anzahl der Künstler', tickCount=10, tickMinStep=50)),
+    color=alt.Color('artist(s)_name',  scale=alt.Scale(
+        domain=[1, 400], type="log", scheme='blues'), legend=None),
+    tooltip=['artist_country', 'artist(s)_name']
+).properties(
+    title={'text': 'Top 10 Herkunftsländer der Top-Künstler', 'dy': -20},
+    background='#191919',
+    width=1000,
+    height=550
+).configure_title(
+    fontSize=45,
+    color=title_color,
+    anchor='start'
+).configure_axis(
+    labelFontSize=22,
+    titleFontSize=35,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y,
+    titlePadding=12,
+    grid=False
+).configure_legend(
+    titleFontSize=30,
+    labelFontSize=22,
+    titleColor=axis_title_color,
+    labelColor=axis_title_y
+).configure_view(
+    strokeWidth=0,
+).configure_axisX(
+    labelAngle=-45,
+    titleAnchor='start'
+).configure_axisY(
+    grid=False,
+    titleAnchor='end'
+)
+
+top_artist_country_count_chart
+
+```
+
+:::
+::::
+
+# Handlungsempfehlungen für einen erfolgreichen Song
+
+## Empfehlungen
+
+
+1. <span style="color: #00d9ff">**Tonart Dur (Major)**</span> für fröhlichen und einladenden Klang
+2. Den Key <span style="color: #00d9ff">**C#**</span> nutzen für einzigartige Klangqualität
+3. <span style="color: #00d9ff">**Realease im Januar oder im Mai**</span> für bessere Marktchancen
+4. <span style="color: #00d9ff">**Sprechanteil minimieren**</span>, Schwerpunkt auf Melodie und Gesang
+5. <span style="color: #00d9ff">**Hohes Energieniveau**</span>, vermeide Extreme
+6. <span style="color: #00d9ff">**Englisch oder Spanisch**</span> für breite globale Anziehungskraft
+
+
+::: {.fragment .fade-in}
+
+> ***"Die richtige Kombination aus Tonart, Timing, Sprache und Energie kann Ihren Song zum Erfolg führen!"***
+
+:::

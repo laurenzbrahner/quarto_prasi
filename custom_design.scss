@@ -1,0 +1,42 @@
+/*-- scss:defaults --*/
+// Hier können Sie Standardwerte für Variablen definieren.
+
+/*-- scss:rules --*/
+// Hier schreiben Sie Ihre Haupt-Style-Regeln.
+.reveal {
+    h3 {
+        font-size: 70px;
+    }
+
+    h4 {
+        font-size: 40px;
+    }
+
+    h2 {
+        font-size: 100px;
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 200px;
+    }
+
+
+
+    // Weitere Style-Regeln...
+}
+
+
+.footer {
+    text-align: left;
+}
+
+
+/*-- scss:mixins --*/
+// Hier können Sie Mixins definieren, falls benötigt.
+
+/*-- scss:functions --*/
+// Hier können Sie Funktionen definieren, falls benötigt.
+
+/*-- scss:uses --*/
+// Verwenden Sie diesen Bereich, um andere SCSS-Dateien zu importieren.
